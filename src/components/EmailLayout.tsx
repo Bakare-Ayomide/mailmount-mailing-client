@@ -57,7 +57,7 @@ export function EmailLayout({ children }: EmailLayoutProps) {
               <span className="text-primary-foreground font-bold text-sm">M</span>
             </div>
             <h1 className="text-xl font-semibold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              SwiftMail
+              MailMount
             </h1>
           </div>
         </div>

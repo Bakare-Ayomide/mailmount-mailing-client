@@ -8,33 +8,57 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 0 0% 98%;
+    --foreground: 213 25% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 213 25% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 213 25% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Email Client Primary Blue */
+    --primary: 213 71% 38%;
+    --primary-foreground: 0 0% 98%;
+    --primary-hover: 213 71% 32%;
+    --primary-light: 213 71% 92%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Email Client Secondary Green */
+    --secondary: 146 71% 38%;
+    --secondary-foreground: 0 0% 98%;
+    --secondary-hover: 146 71% 32%;
+    --secondary-light: 146 71% 92%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 213 20% 96%;
+    --muted-foreground: 213 15% 50%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 213 20% 94%;
+    --accent-foreground: 213 25% 15%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 213 20% 90%;
+    --input: 213 20% 94%;
+    --ring: 213 71% 38%;
+
+    /* Email specific colors */
+    --email-unread: 213 71% 38%;
+    --email-read: 213 15% 60%;
+    --email-important: 45 93% 58%;
+    --email-draft: 213 15% 70%;
+    --email-sent: 146 71% 38%;
+    --email-spam: 0 84% 60%;
+
+    /* Gmail-like sidebar */
+    --sidebar-bg: 0 0% 99%;
+    --sidebar-hover: 213 20% 96%;
+    --sidebar-active: 213 71% 92%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(213 71% 38%), hsl(213 71% 45%));
+    --gradient-secondary: linear-gradient(135deg, hsl(146 71% 38%), hsl(146 71% 45%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(213 20% 98%));
 
     --radius: 0.5rem;
 

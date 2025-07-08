@@ -143,10 +143,19 @@ export function AccountManager({ onBack }: AccountManagerProps) {
   };
 
   const addAccount = async () => {
-    if (!email || !password || !displayName || !selectedProvider) {
+    if (!email || !password || !displayName) {
       toast({
         title: "Error",
         description: "Please fill all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedProvider) {
+      toast({
+        title: "Error",
+        description: "Please select or create a provider",
         variant: "destructive",
       });
       return;

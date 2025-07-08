@@ -12,6 +12,15 @@ A local email backend supporting all major email providers with regular password
 
 ## Quick Start
 
+**IMPORTANT**: To use MailMount, you must start the backend server first!
+
+### Option 1: Start Both Servers (Recommended)
+```bash
+node start-mailmount.js
+```
+This starts both backend (port 3001) and frontend (port 5173).
+
+### Option 2: Manual Start
 1. **Install backend dependencies:**
    ```bash
    cd server
@@ -20,13 +29,21 @@ A local email backend supporting all major email providers with regular password
 
 2. **Start the backend:**
    ```bash
+   cd server
    npm run dev
    ```
 
-3. **Start both frontend and backend:**
+3. **Start the frontend (in another terminal):**
    ```bash
-   node start-mailmount.js
+   npm run dev
    ```
+
+## Troubleshooting "Failed to fetch" errors
+
+If you see console errors about failed API calls:
+1. Ensure the backend is running on `http://localhost:3001`
+2. Use `node start-mailmount.js` to start both servers
+3. Check that no other process is using port 3001
 
 ## API Endpoints
 

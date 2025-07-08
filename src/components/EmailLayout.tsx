@@ -17,6 +17,8 @@ import { EmailViewer } from "./EmailViewer";
 import { AccountManager } from "./AccountManager";
 import { apiService, EmailAccount } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "next-themes";
+import { Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface EmailLayoutProps {
@@ -30,6 +32,7 @@ export function EmailLayout({ children }: EmailLayoutProps) {
   const [accounts, setAccounts] = useState<EmailAccount[]>([]);
   const [currentFolder, setCurrentFolder] = useState('inbox');
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     loadAccounts();
@@ -129,7 +132,19 @@ export function EmailLayout({ children }: EmailLayoutProps) {
               <DropdownMenuItem onClick={() => setCurrentView('accounts')}>
                 Add Account
               </DropdownMenuItem>
-              <DropdownMenuItem>Dark Mode</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                {theme === 'dark' ? (
+                  <>
+                    <Sun className="mr-2 h-4 w-4" />
+                    Light Mode
+                  </>
+                ) : (
+                  <>
+                    <Moon className="mr-2 h-4 w-4" />
+                    Dark Mode
+                  </>
+                )}
+              </DropdownMenuItem>
               <Separator className="my-1" />
               <DropdownMenuItem>Sign Out</DropdownMenuItem>
             </DropdownMenuContent>

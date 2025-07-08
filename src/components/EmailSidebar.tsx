@@ -191,14 +191,17 @@ export function EmailSidebar({ collapsed, onCompose, currentView, onViewChange, 
         </div>
       )}
 
-      {/* Storage Info */}
+      {/* Server Status */}
       {!collapsed && (
         <div className="p-4 border-t">
-          <div className="text-xs text-muted-foreground mb-2">Storage used</div>
-          <div className="w-full bg-muted rounded-full h-2">
-            <div className="bg-primary h-2 rounded-full" style={{ width: '68%' }} />
+          <div className="text-xs text-muted-foreground mb-2">Server Status</div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span className="text-xs text-muted-foreground">Connected</span>
           </div>
-          <div className="text-xs text-muted-foreground mt-1">6.8 GB of 15 GB used</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {accounts.length} account{accounts.length !== 1 ? 's' : ''} connected
+          </div>
         </div>
       )}
     </div>

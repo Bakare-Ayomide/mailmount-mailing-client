@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -10,15 +10,19 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { apiService, EmailMessage, EmailAccount } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface EmailListProps {
   onEmailSelect: (email: any) => void;
+  folder?: string;
+  accounts?: EmailAccount[];
 }
 
-// Mock email data
+// Mock email data for demo purposes
 const mockEmails = [
   {
-    id: 1,
+    id: "mock-1",
     from: "GitHub",
     fromEmail: "noreply@github.com",
     subject: "Your security alert for repository swift-mail",
@@ -31,7 +35,7 @@ const mockEmails = [
     category: "Primary",
   },
   {
-    id: 2,
+    id: "mock-2",
     from: "Sarah Johnson",
     fromEmail: "sarah.j@company.com",
     subject: "Project Update - Q4 Development Milestones",
@@ -44,7 +48,7 @@ const mockEmails = [
     category: "Work",
   },
   {
-    id: 3,
+    id: "mock-3",
     from: "Netflix",
     fromEmail: "info@netflix.com",
     subject: "New shows added to your list",
@@ -57,7 +61,7 @@ const mockEmails = [
     category: "Promotions",
   },
   {
-    id: 4,
+    id: "mock-4",
     from: "Mom",
     fromEmail: "mom@family.com",
     subject: "Family dinner this weekend?",
@@ -70,7 +74,7 @@ const mockEmails = [
     category: "Personal",
   },
   {
-    id: 5,
+    id: "mock-5",
     from: "Bank of America",
     fromEmail: "alerts@bankofamerica.com",
     subject: "Your monthly statement is ready",
@@ -84,26 +88,136 @@ const mockEmails = [
   },
 ];
 
-export function EmailList({ onEmailSelect }: EmailListProps) {
-  const [selectedEmails, setSelectedEmails] = useState<number[]>([]);
+export function EmailList({ onEmailSelect, folder = 'inbox', accounts = [] }: EmailListProps) {
+  const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
+  const [emails, setEmails] = useState<EmailMessage[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadEmails();
+  }, [folder, accounts]);
+
+  const loadEmails = async () => {
+    if (accounts.length === 0) return;
+    
+    setLoading(true);
+    try {
+      const response = await apiService.getEmails();
+      if (response.success) {
+        let filteredEmails = response.emails;
+        
+        // Filter by folder
+        if (folder === 'inbox') {
+          filteredEmails = filteredEmails.filter(email => 
+            email.folder === 'INBOX' || email.folder === 'Inbox'
+          );
+        } else if (folder === 'sent') {
+          filteredEmails = filteredEmails.filter(email => 
+            email.folder === 'SENT' || email.folder === 'Sent Messages'
+          );
+        } else if (folder === 'starred') {
+          filteredEmails = filteredEmails.filter(email => email.starred);
+        } else if (folder === 'important') {
+          filteredEmails = filteredEmails.filter(email => email.important);
+        } else if (folder === 'drafts') {
+          filteredEmails = filteredEmails.filter(email => 
+            email.folder === 'DRAFTS' || email.folder === 'Drafts'
+          );
+        } else if (folder === 'spam') {
+          filteredEmails = filteredEmails.filter(email => 
+            email.folder === 'SPAM' || email.folder === 'Junk'
+          );
+        } else if (folder === 'trash') {
+          filteredEmails = filteredEmails.filter(email => 
+            email.folder === 'TRASH' || email.folder === 'Deleted Messages'
+          );
+        }
+        
+        setEmails(filteredEmails);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load emails",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const syncEmails = async () => {
+    if (accounts.length === 0) {
+      toast({
+        title: "No Accounts",
+        description: "Please add an email account first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      for (const account of accounts) {
+        await apiService.syncEmails(account.id, 'INBOX', 50);
+      }
+      await loadEmails();
+      toast({
+        title: "Success",
+        description: "Emails synchronized successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sync emails",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedEmails([]);
     } else {
-      setSelectedEmails(mockEmails.map(email => email.id));
+      setSelectedEmails(emails.map(email => email.id));
     }
     setSelectAll(!selectAll);
   };
 
-  const handleSelectEmail = (emailId: number) => {
+  const handleSelectEmail = (emailId: string) => {
     setSelectedEmails(prev => 
       prev.includes(emailId) 
         ? prev.filter(id => id !== emailId)
         : [...prev, emailId]
     );
   };
+
+  const formatEmailDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+    
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diffInHours < 48) {
+      return 'Yesterday';
+    } else if (diffInHours < 168) {
+      return date.toLocaleDateString([], { weekday: 'short' });
+    } else {
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+  };
+
+  const getEmailPreview = (email: EmailMessage) => {
+    const content = email.body.text || email.body.html || '';
+    return content.substring(0, 150).replace(/<[^>]*>/g, '');
+  };
+
+  const displayEmails = emails.length > 0 ? emails : (accounts.length === 0 ? [] : mockEmails);
 
   const getCategoryBadgeColor = (category: string) => {
     const colors = {
@@ -147,13 +261,15 @@ export function EmailList({ onEmailSelect }: EmailListProps) {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Button variant="ghost" size="sm">🔄</Button>
+          <Button variant="ghost" size="sm" onClick={syncEmails} disabled={loading}>
+            {loading ? "⏳" : "🔄"}
+          </Button>
         </div>
       </div>
 
       {/* Email List */}
       <div className="flex-1 overflow-y-auto">
-        {mockEmails.map((email) => (
+        {displayEmails.map((email) => (
           <div
             key={email.id}
             className={cn(

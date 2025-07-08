@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -14,15 +14,37 @@ import { EmailSidebar } from "./EmailSidebar";
 import { EmailList } from "./EmailList";
 import { EmailCompose } from "./EmailCompose";
 import { EmailViewer } from "./EmailViewer";
+import { AccountManager } from "./AccountManager";
+import { apiService, EmailAccount } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface EmailLayoutProps {
   children?: React.ReactNode;
 }
 
 export function EmailLayout({ children }: EmailLayoutProps) {
-  const [currentView, setCurrentView] = useState<'inbox' | 'compose' | 'email'>('inbox');
+  const [currentView, setCurrentView] = useState<'inbox' | 'compose' | 'email' | 'accounts'>('inbox');
   const [selectedEmail, setSelectedEmail] = useState<any>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [accounts, setAccounts] = useState<EmailAccount[]>([]);
+  const [currentFolder, setCurrentFolder] = useState('inbox');
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadAccounts();
+  }, []);
+
+  const loadAccounts = async () => {
+    try {
+      const response = await apiService.getAccounts();
+      if (response.success) {
+        setAccounts(response.accounts);
+      }
+    } catch (error) {
+      console.error("Failed to load accounts:", error);
+    }
+  };
 
   const handleEmailSelect = (email: any) => {
     setSelectedEmail(email);
@@ -38,6 +60,25 @@ export function EmailLayout({ children }: EmailLayoutProps) {
     setCurrentView('inbox');
     setSelectedEmail(null);
   };
+
+  const handleViewChange = (view: string) => {
+    setCurrentView(view as any);
+    setSelectedEmail(null);
+  };
+
+  const handleFolderChange = (folder: string) => {
+    setCurrentFolder(folder);
+  };
+
+  const sidebarItems = [
+    { id: 'inbox', label: 'Inbox' },
+    { id: 'starred', label: 'Starred' },
+    { id: 'important', label: 'Important' },
+    { id: 'sent', label: 'Sent' },
+    { id: 'drafts', label: 'Drafts' },
+    { id: 'spam', label: 'Spam' },
+    { id: 'trash', label: 'Trash' },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -82,8 +123,12 @@ export function EmailLayout({ children }: EmailLayoutProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-popover border shadow-lg">
-              <DropdownMenuItem>Account Settings</DropdownMenuItem>
-              <DropdownMenuItem>Add Account</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setCurrentView('accounts')}>
+                Account Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setCurrentView('accounts')}>
+                Add Account
+              </DropdownMenuItem>
               <DropdownMenuItem>Dark Mode</DropdownMenuItem>
               <Separator className="my-1" />
               <DropdownMenuItem>Sign Out</DropdownMenuItem>
@@ -93,17 +138,37 @@ export function EmailLayout({ children }: EmailLayoutProps) {
       </header>
 
       <div className="flex h-[calc(100vh-4rem)]">
-        {/* Sidebar */}
-        <EmailSidebar 
-          collapsed={sidebarCollapsed}
-          onCompose={handleCompose}
-          currentView={currentView}
-        />
+        {/* Sidebar - Mobile overlay, desktop side-by-side */}
+        <div className={cn(
+          "transition-all duration-300",
+          "md:relative md:translate-x-0",
+          sidebarCollapsed ? "absolute -translate-x-full md:translate-x-0" : "absolute inset-y-0 left-0 z-40 md:relative"
+        )}>
+          <EmailSidebar 
+            collapsed={sidebarCollapsed}
+            onCompose={handleCompose}
+            currentView={currentView}
+            onViewChange={handleViewChange}
+            onFolderChange={handleFolderChange}
+          />
+        </div>
+
+        {/* Overlay for mobile */}
+        {!sidebarCollapsed && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
+            onClick={() => setSidebarCollapsed(true)}
+          />
+        )}
 
         {/* Main Content */}
-        <div className="flex-1 flex overflow-hidden">
-          {currentView === 'inbox' && (
-            <EmailList onEmailSelect={handleEmailSelect} />
+        <div className="flex-1 flex overflow-hidden min-w-0">
+          {(currentView === 'inbox' || sidebarItems.find(item => item.id === currentView)) && (
+            <EmailList 
+              onEmailSelect={handleEmailSelect} 
+              folder={currentFolder}
+              accounts={accounts}
+            />
           )}
           
           {currentView === 'compose' && (
@@ -115,6 +180,10 @@ export function EmailLayout({ children }: EmailLayoutProps) {
               email={selectedEmail} 
               onBack={handleBackToInbox} 
             />
+          )}
+
+          {currentView === 'accounts' && (
+            <AccountManager onBack={handleBackToInbox} />
           )}
         </div>
       </div>

@@ -11,14 +11,24 @@ export class EmailService {
 
   async connectIMAP(account: EmailAccount): Promise<Imap> {
     return new Promise((resolve, reject) => {
-      const imap = new Imap({
+      const imapConfig: any = {
         user: account.email,
         password: account.password,
         host: account.provider.imap.host,
         port: account.provider.imap.port,
-        tls: account.provider.imap.secure,
         tlsOptions: { rejectUnauthorized: false }
-      });
+      };
+
+      // Handle SSL/TLS configuration properly
+      if (account.provider.imap.secure) {
+        // For secure connections (port 993), use implicit SSL - don't set tls
+        // The library handles implicit SSL automatically on secure ports
+      } else {
+        // For non-secure connections (port 143), enable STARTTLS
+        imapConfig.tls = true;
+      }
+
+      const imap = new Imap(imapConfig);
 
       imap.once('ready', () => {
         this.imapConnection = imap;

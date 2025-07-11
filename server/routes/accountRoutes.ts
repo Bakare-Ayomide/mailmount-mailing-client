@@ -70,8 +70,26 @@ router.post('/test-connection', async (req, res) => {
     });
   } catch (error) {
     console.error('Connection test failed:', error);
+    
+    let errorMessage = 'Connection failed';
+    
+    if (error instanceof Error) {
+      // Provide specific error messages for common issues
+      if (error.message.includes('ERR_SSL_WRONG_VERSION_NUMBER')) {
+        errorMessage = 'SSL configuration error. Please check if SSL/TLS settings match your email provider requirements.';
+      } else if (error.message.includes('EAUTH') || error.message.includes('Invalid credentials')) {
+        errorMessage = 'Authentication failed. For Gmail, Outlook, and Yahoo, you may need to use an app-specific password instead of your regular password.';
+      } else if (error.message.includes('ECONNREFUSED')) {
+        errorMessage = 'Connection refused. Please check the server address and port number.';
+      } else if (error.message.includes('ETIMEDOUT')) {
+        errorMessage = 'Connection timeout. Please check your internet connection and server settings.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     res.status(400).json({
-      error: error instanceof Error ? error.message : 'Connection failed',
+      error: errorMessage,
       success: false
     });
   }
@@ -115,8 +133,26 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Error adding account:', error);
+    
+    let errorMessage = 'Failed to add account';
+    
+    if (error instanceof Error) {
+      // Provide specific error messages for common issues
+      if (error.message.includes('ERR_SSL_WRONG_VERSION_NUMBER')) {
+        errorMessage = 'SSL configuration error. Please check if SSL/TLS settings match your email provider requirements.';
+      } else if (error.message.includes('EAUTH') || error.message.includes('Invalid credentials')) {
+        errorMessage = 'Authentication failed. For Gmail, Outlook, and Yahoo, you may need to use an app-specific password instead of your regular password.';
+      } else if (error.message.includes('ECONNREFUSED')) {
+        errorMessage = 'Connection refused. Please check the server address and port number.';
+      } else if (error.message.includes('ETIMEDOUT')) {
+        errorMessage = 'Connection timeout. Please check your internet connection and server settings.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     res.status(400).json({
-      error: error instanceof Error ? error.message : 'Failed to add account',
+      error: errorMessage,
       success: false
     });
   }

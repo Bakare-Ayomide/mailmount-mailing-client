@@ -1,47 +1,36 @@
-import { spawn } from 'child_process';
+#!/usr/bin/env node
+
+import concurrently from 'concurrently';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-console.log('🚀 Starting MailMount...');
+console.log('🚀 Starting MailMount Development Environment...');
 
-// Start backend
-const backend = spawn('npm', ['run', 'dev'], {
-  cwd: path.join(__dirname, 'server'),
-  stdio: 'pipe',
-  shell: true
-});
-
-backend.stdout.on('data', (data) => {
-  console.log(`[Backend] ${data.toString().trim()}`);
-});
-
-backend.stderr.on('data', (data) => {
-  console.error(`[Backend Error] ${data.toString().trim()}`);
-});
-
-// Start frontend
-const frontend = spawn('npm', ['run', 'dev'], {
-  cwd: __dirname,
-  stdio: 'pipe',
-  shell: true
-});
-
-frontend.stdout.on('data', (data) => {
-  console.log(`[Frontend] ${data.toString().trim()}`);
-});
-
-frontend.stderr.on('data', (data) => {
-  console.error(`[Frontend Error] ${data.toString().trim()}`);
-});
-
-// Handle cleanup
-process.on('SIGINT', () => {
-  console.log('\n🛑 Shutting down MailMount...');
-  backend.kill();
-  frontend.kill();
-  process.exit(0);
-});
-
-console.log('✅ MailMount started! Backend on :3001, Frontend on :5173');
+concurrently([
+  {
+    command: 'npm run dev',
+    name: 'backend',
+    cwd: path.join(__dirname, 'server'),
+    prefixColor: 'blue',
+  },
+  {
+    command: 'npm run dev',
+    name: 'frontend', 
+    cwd: __dirname,
+    prefixColor: 'green',
+  }
+], {
+  prefix: 'name',
+  killOthers: ['failure', 'success'],
+  restartTries: 3,
+}).then(
+  () => {
+    console.log('✅ All servers started successfully!');
+  },
+  (error) => {
+    console.error('❌ Error starting servers:', error);
+    process.exit(1);
+  }
+);

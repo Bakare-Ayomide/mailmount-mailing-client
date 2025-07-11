@@ -16,7 +16,10 @@ export class EmailService {
         password: account.password,
         host: account.provider.imap.host,
         port: account.provider.imap.port,
-        tlsOptions: { rejectUnauthorized: false }
+        tlsOptions: { rejectUnauthorized: false },
+        connTimeout: 60000, // 60 seconds connection timeout
+        authTimeout: 30000, // 30 seconds authentication timeout
+        keepalive: true
       };
 
       // Handle SSL/TLS configuration properly

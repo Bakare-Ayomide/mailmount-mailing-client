@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { apiService, EmailAccount, EmailProvider } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { AlertCircle, Server } from "lucide-react";
 
 interface AccountManagerProps {
   onBack: () => void;
@@ -20,6 +23,7 @@ export function AccountManager({ onBack }: AccountManagerProps) {
   const [providers, setProviders] = useState<Record<string, EmailProvider>>({});
   const [loading, setLoading] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const { toast } = useToast();
 
   // Form states
@@ -39,9 +43,20 @@ export function AccountManager({ onBack }: AccountManagerProps) {
   const [smtpSecure, setSmtpSecure] = useState(false);
 
   useEffect(() => {
-    loadAccounts();
-    loadProviders();
+    checkServerStatus();
   }, []);
+
+  const checkServerStatus = async () => {
+    try {
+      await apiService.healthCheck();
+      setServerStatus('online');
+      loadAccounts();
+      loadProviders();
+    } catch (error) {
+      setServerStatus('offline');
+      console.error("Server is offline:", error);
+    }
+  };
 
   const loadAccounts = async () => {
     try {
@@ -50,11 +65,7 @@ export function AccountManager({ onBack }: AccountManagerProps) {
         setAccounts(response.accounts);
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load accounts",
-        variant: "destructive",
-      });
+      console.error("Failed to load accounts:", error);
     }
   };
 
@@ -63,17 +74,13 @@ export function AccountManager({ onBack }: AccountManagerProps) {
       const response = await apiService.getProviders();
       setProviders(response.providers);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load email providers",
-        variant: "destructive",
-      });
+      console.error("Failed to load providers:", error);
     }
   };
 
   const handleEmailChange = async (value: string) => {
     setEmail(value);
-    if (value.includes('@')) {
+    if (value.includes('@') && serverStatus === 'online') {
       try {
         const response = await apiService.detectProvider(value);
         if (response.provider) {
@@ -90,7 +97,8 @@ export function AccountManager({ onBack }: AccountManagerProps) {
   };
 
   const testConnection = async () => {
-    if (!email || !password || !selectedProvider) {
+    // Fix validation logic - check for actual values, not just truthy
+    if (!email.trim() || !password.trim() || !selectedProvider) {
       toast({
         title: "Error",
         description: "Please fill all required fields",
@@ -118,6 +126,15 @@ export function AccountManager({ onBack }: AccountManagerProps) {
   };
 
   const createCustomProvider = async () => {
+    if (!customName.trim() || !imapHost.trim() || !smtpHost.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill all custom provider fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const response = await apiService.createCustomProvider(
         customName,
@@ -143,7 +160,8 @@ export function AccountManager({ onBack }: AccountManagerProps) {
   };
 
   const addAccount = async () => {
-    if (!email || !password || !displayName) {
+    // Fix validation logic - check for actual values, not just truthy
+    if (!email.trim() || !password.trim() || !displayName.trim()) {
       toast({
         title: "Error",
         description: "Please fill all required fields",
@@ -197,6 +215,71 @@ export function AccountManager({ onBack }: AccountManagerProps) {
     setSmtpSecure(false);
   };
 
+  const startServer = () => {
+    toast({
+      title: "Server Setup",
+      description: "Run 'npm run dev:server' in your terminal to start the backend server",
+    });
+  };
+
+  if (serverStatus === 'checking') {
+    return (
+      <div className="flex-1 flex flex-col bg-background p-4 md:p-6">
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" onClick={onBack}>
+            ← Back
+          </Button>
+          <h1 className="text-2xl font-semibold">Account Management</h1>
+        </div>
+        <div className="flex items-center justify-center flex-1">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Checking server status...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (serverStatus === 'offline') {
+    return (
+      <div className="flex-1 flex flex-col bg-background p-4 md:p-6">
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" onClick={onBack}>
+            ← Back
+          </Button>
+          <h1 className="text-2xl font-semibold">Account Management</h1>
+        </div>
+        
+        <div className="flex items-center justify-center flex-1">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-6 text-center">
+              <Server className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Server Offline</h3>
+              <p className="text-muted-foreground mb-4">
+                The backend server is not running. Please start it to manage email accounts.
+              </p>
+              <Alert className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Run <code className="bg-muted px-1 rounded">npm run dev:server</code> in your terminal
+                </AlertDescription>
+              </Alert>
+              <div className="flex gap-2">
+                <Button onClick={checkServerStatus} variant="outline" className="flex-1">
+                  Check Again
+                </Button>
+                <Button onClick={startServer} className="flex-1">
+                  How to Start
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col bg-background p-4 md:p-6">
       {/* Header */}
@@ -205,6 +288,10 @@ export function AccountManager({ onBack }: AccountManagerProps) {
           ← Back
         </Button>
         <h1 className="text-2xl font-semibold">Account Management</h1>
+        <Badge variant="outline" className="ml-auto">
+          <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+          Server Online
+        </Badge>
       </div>
 
       {/* Accounts List */}
@@ -225,7 +312,7 @@ export function AccountManager({ onBack }: AccountManagerProps) {
 
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="email">Email Address *</Label>
                   <Input
                     id="email"
                     type="email"
@@ -236,7 +323,7 @@ export function AccountManager({ onBack }: AccountManagerProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Password *</Label>
                   <Input
                     id="password"
                     type="password"
@@ -247,7 +334,7 @@ export function AccountManager({ onBack }: AccountManagerProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="displayName">Display Name</Label>
+                  <Label htmlFor="displayName">Display Name *</Label>
                   <Input
                     id="displayName"
                     value={displayName}
@@ -270,7 +357,7 @@ export function AccountManager({ onBack }: AccountManagerProps) {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
-                        <Label>Provider Name</Label>
+                        <Label>Provider Name *</Label>
                         <Input
                           value={customName}
                           onChange={(e) => setCustomName(e.target.value)}
@@ -282,7 +369,7 @@ export function AccountManager({ onBack }: AccountManagerProps) {
                         <div className="space-y-3">
                           <h5 className="font-medium">IMAP Settings</h5>
                           <div className="space-y-2">
-                            <Label>Host</Label>
+                            <Label>Host *</Label>
                             <Input
                               value={imapHost}
                               onChange={(e) => setImapHost(e.target.value)}
@@ -309,7 +396,7 @@ export function AccountManager({ onBack }: AccountManagerProps) {
                         <div className="space-y-3">
                           <h5 className="font-medium">SMTP Settings</h5>
                           <div className="space-y-2">
-                            <Label>Host</Label>
+                            <Label>Host *</Label>
                             <Input
                               value={smtpHost}
                               onChange={(e) => setSmtpHost(e.target.value)}
@@ -345,13 +432,13 @@ export function AccountManager({ onBack }: AccountManagerProps) {
                   <Button 
                     onClick={testConnection} 
                     variant="outline" 
-                    disabled={loading}
+                    disabled={loading || !email.trim() || !password.trim() || !selectedProvider}
                   >
                     Test Connection
                   </Button>
                   <Button 
                     onClick={addAccount} 
-                    disabled={loading}
+                    disabled={loading || !email.trim() || !password.trim() || !displayName.trim() || !selectedProvider}
                     className="flex-1"
                   >
                     {loading ? "Adding..." : "Add Account"}
@@ -367,6 +454,9 @@ export function AccountManager({ onBack }: AccountManagerProps) {
             <Card>
               <CardContent className="p-6 text-center">
                 <p className="text-muted-foreground">No accounts connected yet</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Add your first email account to get started
+                </p>
               </CardContent>
             </Card>
           ) : (
@@ -382,6 +472,9 @@ export function AccountManager({ onBack }: AccountManagerProps) {
                       </Badge>
                     </div>
                     <div className="text-right">
+                      <p className="text-xs text-muted-foreground">
+                        Added: {new Date(account.createdAt).toLocaleDateString()}
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         Last sync: {account.lastSync ? new Date(account.lastSync).toLocaleDateString() : 'Never'}
                       </p>

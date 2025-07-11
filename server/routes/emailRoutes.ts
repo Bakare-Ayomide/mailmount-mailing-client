@@ -1,6 +1,6 @@
 import express from 'express';
 import { EmailService } from '../services/emailService.js';
-import { loadAccount, listEmails, loadEmail } from '../utils/fileSystem.js';
+import { loadAccount, listAccounts, listEmails, loadEmail, saveAccount } from '../utils/fileSystem.js';
 import { SendEmailRequest } from '../types/email.js';
 
 const router = express.Router();
